@@ -1,1 +1,73 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuranQuest Live</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 QuranQuest Live</h1>
+            <p>Test Your Quran Knowledge in Real-Time</p>
+        </header>
+
+        <div id="lobby" class="screen active">
+            <h2>Join the Quiz</h2>
+            <div class="join-form">
+                <input type="text" id="username" placeholder="Enter your name" maxlength="20">
+                <button onclick="joinQuiz()">Join Quiz</button>
+            </div>
+            <div class="participants">
+                <p>Participants: <span id="participantCount">0</span></p>
+            </div>
+            <div class="admin-panel" id="adminPanel" style="display: none;">
+                <button onclick="startQuiz()">Start Quiz</button>
+            </div>
+        </div>
+
+        <div id="quiz" class="screen">
+            <div class="quiz-header">
+                <div class="question-info">
+                    Question <span id="currentQ">1</span>/<span id="totalQ">50</span>
+                </div>
+                <div class="timer">
+                    Time: <span id="timer">20</span>s
+                </div>
+                <div class="score">
+                    Score: <span id="currentScore">0</span>
+                </div>
+            </div>
+
+            <div class="question-container">
+                <h2 id="questionText">Question will appear here</h2>
+                <div class="options">
+                    <button class="option" onclick="selectAnswer(0)">Option A</button>
+                    <button class="option" onclick="selectAnswer(1)">Option B</button>
+                    <button class="option" onclick="selectAnswer(2)">Option C</button>
+                    <button class="option" onclick="selectAnswer(3)">Option D</button>
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <h3>🏆 Live Leaderboard</h3>
+                <div id="leaderboardList"></div>
+            </div>
+        </div>
+
+        <div id="results" class="screen">
+            <h2>Quiz Finished! 🎉</h2>
+            <div class="final-results">
+                <h3>Your Score: <span id="finalScore">0</span></h3>
+                <div id="finalLeaderboard"></div>
+                <button onclick="returnToLobby()">Back to Lobby</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
