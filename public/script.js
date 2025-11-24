@@ -48,6 +48,8 @@ const questionsReview = document.getElementById('questionsReview');
 const correctCountDisplay = document.getElementById('correctCount');
 const incorrectCountDisplay = document.getElementById('incorrectCount');
 const accuracyDisplay = document.getElementById('accuracy');
+const questionContainer = document.querySelector('.question-container');
+const quizHeader = document.querySelector('.quiz-header');
 
 // Join Quiz Function
 function joinQuiz() {
@@ -69,6 +71,9 @@ function joinQuiz() {
     usernameInput.disabled = true;
     document.querySelector('.join-form button').disabled = true;
     document.querySelector('.join-form button').textContent = 'Joined!';
+    
+    // Show waiting state
+    showWaitingForQuiz();
 }
 
 // Start Quiz Function (Admin only)
@@ -85,18 +90,60 @@ function startQuiz() {
     }
 }
 
-// Select Answer Function - FIXED: Better state validation
+// Show waiting state before quiz starts
+function showWaitingForQuiz() {
+    // Hide question container and show waiting message
+    questionContainer.style.display = 'none';
+    
+    // Create waiting message if it doesn't exist
+    let waitingMessage = document.getElementById('waitingMessage');
+    if (!waitingMessage) {
+        waitingMessage = document.createElement('div');
+        waitingMessage.id = 'waitingMessage';
+        waitingMessage.className = 'waiting-message';
+        waitingMessage.innerHTML = `
+            <div class="waiting-content">
+                <div class="spinner"></div>
+                <h3>Waiting for Quiz to Start...</h3>
+                <p>Please wait while the admin starts the quiz. Questions will appear here when the quiz begins.</p>
+                <div class="waiting-info">
+                    <p>✅ You have successfully joined</p>
+                    <p>👥 Participants: <span id="waitingParticipantCount">${participantCount.textContent}</span></p>
+                    <p>⏱️ Get ready for 50 questions × 10 seconds each</p>
+                </div>
+            </div>
+        `;
+        quizScreen.insertBefore(waitingMessage, questionContainer);
+    }
+    
+    // Update quiz header to show waiting state
+    currentQ.textContent = '0';
+    timerDisplay.textContent = '--';
+    questionText.textContent = 'Waiting for quiz to start...';
+}
+
+// Show active quiz state
+function showActiveQuiz() {
+    // Show question container and hide waiting message
+    questionContainer.style.display = 'block';
+    
+    const waitingMessage = document.getElementById('waitingMessage');
+    if (waitingMessage) {
+        waitingMessage.remove();
+    }
+}
+
+// Select Answer Function - FIXED: No annoying popup
 function selectAnswer(answerIndex) {
     console.log('Answer selected:', answerIndex, 'Question:', currentQuestionIndex);
     
-    // FIX 1: Validate quiz state more thoroughly
+    // Validate quiz state more thoroughly - SILENTLY reject if not active
     if (!quizState?.isActive) {
-        console.log('Quiz not active - cannot answer');
-        alert('Quiz is not active yet. Please wait for the quiz to start.');
+        console.log('Quiz not active - silently rejecting answer');
         return;
     }
     
-    // FIX 2: Prevent multiple answers for same question
+    // Prevent multiple answers for same question
     if (userAnswers[currentQuestionIndex] !== null) {
         console.log('Already answered this question');
         return;
@@ -211,7 +258,7 @@ function updateLeaderboard(leaderboardData) {
         const item = document.createElement('div');
         item.className = `leaderboard-item ${participant.username === currentUser ? 'you' : ''}`;
         
-        // FIX 3: Add ranking change indicators
+        // Add ranking change indicators
         const previousRank = previousLeaderboard.findIndex(p => p.username === participant.username);
         let rankChange = '';
         if (previousRank !== -1 && previousRank !== index) {
@@ -237,10 +284,16 @@ function updateLeaderboard(leaderboardData) {
     if (currentUserData) {
         currentScore.textContent = currentUserData.score;
         
-        // FIX 4: Update performance counts from server data
+        // Update performance counts from server data
         correctCount = currentUserData.correctAnswers;
         incorrectCount = (currentQuestionIndex + 1) - correctCount;
         updatePerformanceDisplay();
+    }
+    
+    // Update waiting message participant count
+    const waitingParticipantCount = document.getElementById('waitingParticipantCount');
+    if (waitingParticipantCount) {
+        waitingParticipantCount.textContent = leaderboardData.length;
     }
 }
 
@@ -251,6 +304,9 @@ function displayQuestion(questionData) {
     const { question, current, total } = questionData;
     
     console.log('Displaying question:', current, 'of', total);
+    
+    // Show active quiz state
+    showActiveQuiz();
     
     questionText.textContent = question.question;
     currentQ.textContent = current;
@@ -446,10 +502,10 @@ document.addEventListener('keypress', (e) => {
 console.log(`
 %c🎯 QuranQuest Live - Enhanced Version %c
 %c✅ All fixes applied:
-   - Answer validation and state checking
-   - Duplicate answer prevention  
+   - No annoying popups
+   - Clean waiting state
+   - Answer validation (silent)
    - Real-time leaderboard sorting
-   - Proper ranking system
    - Dynamic performance tracking
 `, 
 'background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
