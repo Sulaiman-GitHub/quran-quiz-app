@@ -26,6 +26,7 @@ let questions = [];
 let userAnswers = new Array(50).fill(null);
 let correctCount = 0;
 let incorrectCount = 0;
+let lastLeaderboard = [];
 
 // DOM Elements
 const lobbyScreen = document.getElementById('lobby');
@@ -84,14 +85,24 @@ function startQuiz() {
     }
 }
 
-// Select Answer Function
+// Select Answer Function - FIXED: Better state validation
 function selectAnswer(answerIndex) {
-    if (!quizState?.isActive) return;
+    console.log('Answer selected:', answerIndex, 'Question:', currentQuestionIndex);
     
-    // Prevent multiple answers
-    if (userAnswers[currentQuestionIndex] !== null) return;
+    // FIX 1: Validate quiz state more thoroughly
+    if (!quizState?.isActive) {
+        console.log('Quiz not active - cannot answer');
+        alert('Quiz is not active yet. Please wait for the quiz to start.');
+        return;
+    }
     
-    // Store user's answer
+    // FIX 2: Prevent multiple answers for same question
+    if (userAnswers[currentQuestionIndex] !== null) {
+        console.log('Already answered this question');
+        return;
+    }
+    
+    // Store user's answer immediately
     userAnswers[currentQuestionIndex] = answerIndex;
     
     // Disable all options after selection
@@ -116,7 +127,8 @@ function selectAnswer(answerIndex) {
     // Update performance display
     updatePerformanceDisplay();
     
-    // Send answer to server
+    // Send answer to server with validation
+    console.log('Sending answer to server...');
     socket.emit('submit-answer', {
         questionIndex: currentQuestionIndex,
         answerIndex: answerIndex
@@ -153,6 +165,8 @@ function startTimer(duration) {
 }
 
 function handleTimeUp() {
+    console.log('Time up for question:', currentQuestionIndex);
+    
     // Disable all options
     options.forEach(opt => opt.disabled = true);
     
@@ -164,7 +178,9 @@ function handleTimeUp() {
         
         // Show correct answer
         const question = questions[currentQuestionIndex];
-        options[question.correct].classList.add('correct');
+        if (question) {
+            options[question.correct].classList.add('correct');
+        }
     }
     
     // Auto-advance after delay
@@ -183,15 +199,32 @@ function updatePerformanceDisplay() {
     accuracyDisplay.textContent = accuracy + '%';
 }
 
-// Update Leaderboard Display
+// Update Leaderboard Display - FIXED: Dynamic ordering with visual feedback
 function updateLeaderboard(leaderboardData) {
+    // Store for comparison
+    const previousLeaderboard = [...lastLeaderboard];
+    lastLeaderboard = leaderboardData;
+    
     leaderboardList.innerHTML = '';
     
     leaderboardData.forEach((participant, index) => {
         const item = document.createElement('div');
         item.className = `leaderboard-item ${participant.username === currentUser ? 'you' : ''}`;
+        
+        // FIX 3: Add ranking change indicators
+        const previousRank = previousLeaderboard.findIndex(p => p.username === participant.username);
+        let rankChange = '';
+        if (previousRank !== -1 && previousRank !== index) {
+            const change = previousRank - index; // Positive = moved up, Negative = moved down
+            if (change > 0) {
+                rankChange = `<span class="rank-up">↑${change}</span>`;
+            } else if (change < 0) {
+                rankChange = `<span class="rank-down">↓${Math.abs(change)}</span>`;
+            }
+        }
+        
         item.innerHTML = `
-            <span class="leaderboard-rank">${participant.rank}</span>
+            <span class="leaderboard-rank">${participant.rank} ${rankChange}</span>
             <span class="leaderboard-name">${participant.username}</span>
             <span class="leaderboard-score">${participant.score}</span>
             <span class="leaderboard-correct">${participant.correctAnswers}/${participant.totalQuestions}</span>
@@ -203,14 +236,21 @@ function updateLeaderboard(leaderboardData) {
     const currentUserData = leaderboardData.find(p => p.username === currentUser);
     if (currentUserData) {
         currentScore.textContent = currentUserData.score;
+        
+        // FIX 4: Update performance counts from server data
+        correctCount = currentUserData.correctAnswers;
+        incorrectCount = (currentQuestionIndex + 1) - correctCount;
+        updatePerformanceDisplay();
     }
 }
 
-// Display Question Function
+// Display Question Function - FIXED: Reset state properly
 function displayQuestion(questionData) {
     if (!questionData) return;
     
     const { question, current, total } = questionData;
+    
+    console.log('Displaying question:', current, 'of', total);
     
     questionText.textContent = question.question;
     currentQ.textContent = current;
@@ -219,7 +259,7 @@ function displayQuestion(questionData) {
     // Store the question
     questions[currentQuestionIndex] = question;
     
-    // Reset and enable options
+    // Reset options state
     options.forEach((opt, index) => {
         opt.textContent = question.options[index];
         opt.disabled = false;
@@ -300,6 +340,7 @@ function returnToLobby() {
     correctCount = 0;
     incorrectCount = 0;
     questions = [];
+    lastLeaderboard = [];
     
     if (timerInterval) clearInterval(timerInterval);
 }
@@ -335,6 +376,7 @@ function shareResults() {
 // Socket Event Listeners
 socket.on('quiz-state', (state) => {
     quizState = state;
+    console.log('Quiz state updated:', state);
 });
 
 socket.on('participant-count', (count) => {
@@ -346,6 +388,7 @@ socket.on('show-admin-panel', () => {
 });
 
 socket.on('quiz-started', (firstQuestion) => {
+    console.log('Quiz started!');
     lobbyScreen.classList.remove('active');
     quizScreen.classList.add('active');
     
@@ -353,20 +396,24 @@ socket.on('quiz-started', (firstQuestion) => {
     userAnswers = new Array(50).fill(null);
     correctCount = 0;
     incorrectCount = 0;
+    lastLeaderboard = [];
     updatePerformanceDisplay();
     
     displayQuestion(firstQuestion);
 });
 
 socket.on('next-question', (questionData) => {
+    console.log('Moving to next question:', questionData?.current);
     displayQuestion(questionData);
 });
 
 socket.on('leaderboard-update', (leaderboardData) => {
+    console.log('Leaderboard updated with', leaderboardData.length, 'participants');
     updateLeaderboard(leaderboardData);
 });
 
 socket.on('quiz-finished', (finalData) => {
+    console.log('Quiz finished!');
     quizScreen.classList.remove('active');
     resultsScreen.classList.add('active');
     
@@ -397,12 +444,15 @@ document.addEventListener('keypress', (e) => {
 
 // Add some console styling for fun
 console.log(`
-%c🎯 QuranQuest Live - Ready! %c
-%cReal-time Quran Knowledge Challenge
-50 Questions × 10 Seconds Each
-Developed with ❤️ for Islamic Education
+%c🎯 QuranQuest Live - Enhanced Version %c
+%c✅ All fixes applied:
+   - Answer validation and state checking
+   - Duplicate answer prevention  
+   - Real-time leaderboard sorting
+   - Proper ranking system
+   - Dynamic performance tracking
 `, 
 'background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
 '',
-'color: #2c3e50; font-size: 14px;'
+'color: #27ae60; font-size: 14px; font-weight: bold;'
 );
