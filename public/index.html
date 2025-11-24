@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +10,7 @@
     <div class="container">
         <header>
             <h1>🎯 QuranQuest Live</h1>
-            <p>Test Your Quran Knowledge in Real-Time</p>
+            <p>Test Your Quran Knowledge in Real-Time | 50 Questions × 10 Seconds Each</p>
         </header>
 
         <div id="lobby" class="screen active">
@@ -24,7 +23,18 @@
                 <p>Participants: <span id="participantCount">0</span></p>
             </div>
             <div class="admin-panel" id="adminPanel" style="display: none;">
-                <button onclick="startQuiz()">Start Quiz</button>
+                <button onclick="startQuiz()">Start Quiz for All Participants</button>
+            </div>
+            
+            <div class="quiz-info">
+                <h3>Quiz Information:</h3>
+                <ul>
+                    <li>📝 <strong>50 Questions</strong> about the Holy Quran</li>
+                    <li>⏱️ <strong>10 seconds</strong> per question</li>
+                    <li>🏆 <strong>Real-time scoring</strong> based on speed and accuracy</li>
+                    <li>📊 <strong>Live leaderboard</strong> showing all participants</li>
+                    <li>📈 <strong>Performance tracking</strong> throughout the quiz</li>
+                </ul>
             </div>
         </div>
 
@@ -33,11 +43,12 @@
                 <div class="question-info">
                     Question <span id="currentQ">1</span>/<span id="totalQ">50</span>
                 </div>
-                <div class="timer">
-                    Time: <span id="timer">20</span>s
+                <div class="timer-container">
+                    <div class="timer" id="timer">10</div>
+                    <div class="timer-label">seconds left</div>
                 </div>
                 <div class="score">
-                    Score: <span id="currentScore">0</span>
+                    Your Score: <span id="currentScore">0</span>
                 </div>
             </div>
 
@@ -51,18 +62,61 @@
                 </div>
             </div>
 
-            <div class="leaderboard">
-                <h3>🏆 Live Leaderboard</h3>
-                <div id="leaderboardList"></div>
+            <div class="performance-section">
+                <div class="leaderboard">
+                    <h3>🏆 Live Leaderboard</h3>
+                    <div class="leaderboard-header">
+                        <span>Rank</span>
+                        <span>Name</span>
+                        <span>Score</span>
+                        <span>Correct</span>
+                    </div>
+                    <div id="leaderboardList" class="leaderboard-list"></div>
+                </div>
+                
+                <div class="current-performance">
+                    <h3>📈 Your Performance</h3>
+                    <div class="performance-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="correctCount">0</span>
+                            <span class="stat-label">Correct</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="incorrectCount">0</span>
+                            <span class="stat-label">Incorrect</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="accuracy">0%</span>
+                            <span class="stat-label">Accuracy</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div id="results" class="screen">
-            <h2>Quiz Finished! 🎉</h2>
-            <div class="final-results">
-                <h3>Your Score: <span id="finalScore">0</span></h3>
-                <div id="finalLeaderboard"></div>
+            <h2>🎉 Quiz Finished! Final Results</h2>
+            
+            <div class="final-leaderboard">
+                <h3>🏆 Final Ranking</h3>
+                <div class="leaderboard-header">
+                    <span>Rank</span>
+                    <span>Name</span>
+                    <span>Score</span>
+                    <span>Correct</span>
+                    <span>Accuracy</span>
+                </div>
+                <div id="finalLeaderboard" class="leaderboard-list"></div>
+            </div>
+
+            <div class="questions-review">
+                <h3>📋 Questions Review</h3>
+                <div id="questionsReview" class="review-list"></div>
+            </div>
+
+            <div class="action-buttons">
                 <button onclick="returnToLobby()">Back to Lobby</button>
+                <button onclick="shareResults()">Share Results</button>
             </div>
         </div>
     </div>
