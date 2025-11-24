@@ -5,12 +5,24 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+
+// Fix for Render deployment - allow all origins
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 // Serve static files from public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Sample Quran questions (you can expand to 50)
+// Basic route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Sample Quran questions
 const questions = [
     {
         id: 1,
@@ -33,7 +45,6 @@ const questions = [
         correct: 1,
         timeLimit: 20
     }
-    // Add 47 more questions here
 ];
 
 let quizState = {
@@ -56,6 +67,11 @@ io.on('connection', (socket) => {
         
         socket.emit('quiz-state', quizState);
         io.emit('participant-count', Object.keys(quizState.participants).length);
+        
+        // Show admin panel for first participant
+        if (Object.keys(quizState.participants).length === 1) {
+            socket.emit('show-admin-panel');
+        }
     });
 
     socket.on('start-quiz', () => {
@@ -73,7 +89,6 @@ io.on('connection', (socket) => {
         const isCorrect = data.answerIndex === question.correct;
         
         if (isCorrect) {
-            // Calculate points based on speed (faster = more points)
             const timeTaken = Date.now() - quizState.startTime;
             const points = Math.max(10, 50 - Math.floor(timeTaken / 1000));
             participant.score += points;
@@ -85,7 +100,6 @@ io.on('connection', (socket) => {
             correct: isCorrect
         });
 
-        // Update leaderboard
         io.emit('leaderboard-update', getLeaderboard());
     });
 
@@ -95,7 +109,6 @@ io.on('connection', (socket) => {
             quizState.startTime = Date.now();
             io.emit('next-question', questions[quizState.currentQuestion]);
         } else {
-            // Quiz finished
             quizState.isActive = false;
             io.emit('quiz-finished', getLeaderboard());
         }
@@ -114,6 +127,6 @@ function getLeaderboard() {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
