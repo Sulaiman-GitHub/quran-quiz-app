@@ -417,7 +417,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit-answer', (data) => {
-        // FIX 1: Validate quiz state and question index before processing
+        // Validate quiz state and question index before processing
         if (!quizState.isActive) {
             console.log('Quiz not active - rejecting answer');
             return;
@@ -434,7 +434,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // FIX 2: Prevent duplicate answers for same question
+        // Prevent duplicate answers for same question
         if (participant.answers[data.questionIndex] !== null) {
             console.log('Duplicate answer - rejecting');
             return;
@@ -461,7 +461,7 @@ io.on('connection', (socket) => {
 
         participant.totalTime += answerTime;
 
-        // FIX 3: Immediately update leaderboard for all participants
+        // Immediately update leaderboard for all participants
         const updatedLeaderboard = getLeaderboard();
         io.emit('leaderboard-update', updatedLeaderboard);
     });
@@ -493,7 +493,7 @@ io.on('connection', (socket) => {
 function getLeaderboard() {
     const participants = Object.values(quizState.participants);
     
-    // FIX 4: Proper sorting by score (highest first), then by correct answers, then by time
+    // Proper sorting by score (highest first), then by correct answers, then by time
     const sortedParticipants = participants.sort((a, b) => {
         if (b.score !== a.score) {
             return b.score - a.score; // Higher score first
@@ -544,9 +544,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Total questions loaded: ${questions.length}`);
-    console.log('✅ All fixes applied:');
-    console.log('   - Answer validation and state checking');
-    console.log('   - Duplicate answer prevention');
-    console.log('   - Real-time leaderboard sorting');
-    console.log('   - Proper ranking system');
+    console.log('✅ All fixes applied - No annoying popups!');
 });
