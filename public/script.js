@@ -1,8 +1,27 @@
-const socket = io();
+// Socket.io connection
+const socket = io({
+    transports: ['websocket', 'polling']
+});
+
+// Connection status monitoring
+socket.on('connect', () => {
+    console.log('✅ Connected to server');
+});
+
+socket.on('disconnect', () => {
+    console.log('❌ Disconnected from server');
+});
+
+socket.on('connect_error', (error) => {
+    console.log('❌ Connection error:', error);
+});
+
 let currentUser = null;
 let currentQuestionIndex = 0;
 let timerInterval = null;
 let timeLeft = 20;
+let quizState = null;
+let questions = [];
 
 // DOM Elements
 const lobbyScreen = document.getElementById('lobby');
@@ -31,11 +50,6 @@ function joinQuiz() {
     
     currentUser = username;
     socket.emit('join-quiz', username);
-    
-    // Show admin panel for first participant (simple admin system)
-    if (Object.keys(quizState?.participants || {}).length === 0) {
-        adminPanel.style.display = 'block';
-    }
 }
 
 // Start Quiz Function (Admin only)
@@ -133,16 +147,22 @@ socket.on('participant-count', (count) => {
     participantCount.textContent = count;
 });
 
+socket.on('show-admin-panel', () => {
+    adminPanel.style.display = 'block';
+});
+
 socket.on('quiz-started', (firstQuestion) => {
     lobbyScreen.classList.remove('active');
     quizScreen.classList.add('active');
     
     currentQuestionIndex = 0;
+    questions = [firstQuestion];
     displayQuestion(firstQuestion);
 });
 
 socket.on('next-question', (question) => {
     currentQuestionIndex++;
+    questions.push(question);
     displayQuestion(question);
 });
 
@@ -203,4 +223,11 @@ totalQ.textContent = '50';
 // Handle page refresh
 window.addEventListener('beforeunload', () => {
     socket.disconnect();
+});
+
+// Enable Enter key to join quiz
+usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        joinQuiz();
+    }
 });
