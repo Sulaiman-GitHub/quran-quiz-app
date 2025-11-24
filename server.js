@@ -91,7 +91,6 @@ const questions = [
         correct: 2,
         timeLimit: 10
     },
-    // Add 40 more questions following the same pattern...
     {
         id: 11,
         question: "Which Surah is the longest in the Quran?",
@@ -162,7 +161,6 @@ const questions = [
         correct: 1,
         timeLimit: 10
     },
-    // Continue adding until 50 questions...
     {
         id: 21,
         question: "Which Surah has no Bismillah?",
@@ -197,8 +195,182 @@ const questions = [
         options: ["67", "77", "87", "97"],
         correct: 3,
         timeLimit: 10
+    },
+    {
+        id: 26,
+        question: "Which Surah is named after a woman?",
+        options: ["Surah Maryam", "Surah Noor", "Surah Fatir", "Surah Rahman"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 27,
+        question: "How many times is the word 'Ramadan' mentioned in the Quran?",
+        options: ["1", "2", "3", "4"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 28,
+        question: "Which Surah is called 'The Crowning'?",
+        options: ["Surah Al-Fatiha", "Surah Al-Baqarah", "Surah Yaseen", "Surah Al-Mulk"],
+        correct: 3,
+        timeLimit: 10
+    },
+    {
+        id: 29,
+        question: "How many years did it take for the Quran to be revealed?",
+        options: ["20 years", "23 years", "25 years", "30 years"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 30,
+        question: "Which Surah is known as 'The Quran's Backbone'?",
+        options: ["Surah Al-Baqarah", "Surah Al-Kahf", "Surah Al-Mulk", "Surah Yaseen"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 31,
+        question: "Which Surah is called 'The Glory'?",
+        options: ["Surah Al-Isra", "Surah Al-Fath", "Surah Al-Hadid", "Surah Al-Mulk"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 32,
+        question: "How many times is the word 'Qadar' mentioned in the Quran?",
+        options: ["5", "7", "9", "11"],
+        correct: 2,
+        timeLimit: 10
+    },
+    {
+        id: 33,
+        question: "Which Surah is named after an insect?",
+        options: ["Surah An-Nahl", "Surah An-Naml", "Surah Al-Ankabut", "Surah Al-Fil"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 34,
+        question: "How many times is the word 'Jannah' mentioned in the Quran?",
+        options: ["66", "77", "88", "99"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 35,
+        question: "Which Surah is called 'The Test'?",
+        options: ["Surah Al-Mumtahanah", "Surah Al-Mujadilah", "Surah Al-Hashr", "Surah As-Saff"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 36,
+        question: "How many times is the word 'Shaytan' mentioned in the Quran?",
+        options: ["68", "73", "78", "83"],
+        correct: 3,
+        timeLimit: 10
+    },
+    {
+        id: 37,
+        question: "Which Surah is named after a battle?",
+        options: ["Surah Al-Ahzab", "Surah Al-Anfal", "Surah Al-Hashr", "Surah As-Saff"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 38,
+        question: "How many times is the word 'Rahman' mentioned in the Quran?",
+        options: ["47", "57", "67", "77"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 39,
+        question: "Which Surah is called 'The Iron'?",
+        options: ["Surah Al-Hadid", "Surah Al-Qalam", "Surah Al-Muzzammil", "Surah Al-Muddathir"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 40,
+        question: "How many times is the word 'Qiyamah' mentioned in the Quran?",
+        options: ["60", "65", "70", "75"],
+        correct: 2,
+        timeLimit: 10
+    },
+    {
+        id: 41,
+        question: "Which Surah is named after a star?",
+        options: ["Surah An-Najm", "Surah Ash-Shams", "Surah Al-Qamar", "Surah At-Tariq"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 42,
+        question: "How many times is the word 'Hajj' mentioned in the Quran?",
+        options: ["8", "10", "12", "14"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 43,
+        question: "Which Surah is called 'The Dawn'?",
+        options: ["Surah Al-Falaq", "Surah Al-Fajr", "Surah Ad-Duha", "Surah Al-Lail"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 44,
+        question: "How many times is the word 'Sadaqah' mentioned in the Quran?",
+        options: ["13", "15", "17", "19"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 45,
+        question: "Which Surah is named after a city?",
+        options: ["Surah Rome", "Surah Sheba", "Surah Antioch", "Surah Babylon"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 46,
+        question: "How many times is the word 'Tawbah' mentioned in the Quran?",
+        options: ["11", "13", "15", "17"],
+        correct: 1,
+        timeLimit: 10
+    },
+    {
+        id: 47,
+        question: "Which Surah is called 'The Sun'?",
+        options: ["Surah Ash-Shams", "Surah Ad-Duha", "Surah Al-Lail", "Surah Al-Fajr"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 48,
+        question: "How many times is the word 'Rizq' mentioned in the Quran?",
+        options: ["102", "112", "122", "132"],
+        correct: 2,
+        timeLimit: 10
+    },
+    {
+        id: 49,
+        question: "Which Surah is named after a prophet's wife?",
+        options: ["Surah Maryam", "Surah Nooh", "Surah Hud", "Surah Yusuf"],
+        correct: 0,
+        timeLimit: 10
+    },
+    {
+        id: 50,
+        question: "How many times is the word 'Ilm' mentioned in the Quran?",
+        options: ["704", "754", "804", "854"],
+        correct: 3,
+        timeLimit: 10
     }
-    // Note: You can continue adding 25 more questions following this pattern
 ];
 
 let quizState = {
@@ -219,7 +391,8 @@ io.on('connection', (socket) => {
             score: 0,
             answers: new Array(questions.length).fill(null),
             correctAnswers: 0,
-            totalTime: 0
+            totalTime: 0,
+            socketId: socket.id
         };
         
         socket.emit('quiz-state', quizState);
@@ -244,9 +417,29 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit-answer', (data) => {
-        if (!quizState.isActive || data.questionIndex !== quizState.currentQuestion) return;
+        // FIX 1: Validate quiz state and question index before processing
+        if (!quizState.isActive) {
+            console.log('Quiz not active - rejecting answer');
+            return;
+        }
+        
+        if (data.questionIndex !== quizState.currentQuestion) {
+            console.log('Wrong question index - rejecting answer');
+            return;
+        }
 
         const participant = quizState.participants[socket.id];
+        if (!participant) {
+            console.log('Participant not found - rejecting answer');
+            return;
+        }
+
+        // FIX 2: Prevent duplicate answers for same question
+        if (participant.answers[data.questionIndex] !== null) {
+            console.log('Duplicate answer - rejecting');
+            return;
+        }
+
         const question = questions[data.questionIndex];
         const isCorrect = data.answerIndex === question.correct;
         const answerTime = Date.now() - quizState.questionStartTime;
@@ -255,7 +448,8 @@ io.on('connection', (socket) => {
         participant.answers[data.questionIndex] = {
             answerIndex: data.answerIndex,
             isCorrect: isCorrect,
-            timeTaken: answerTime
+            timeTaken: answerTime,
+            timestamp: Date.now()
         };
 
         // Calculate points: Base 100 points for correct answer, reduced by time taken
@@ -267,8 +461,9 @@ io.on('connection', (socket) => {
 
         participant.totalTime += answerTime;
 
-        // Update everyone's leaderboard
-        io.emit('leaderboard-update', getLeaderboard());
+        // FIX 3: Immediately update leaderboard for all participants
+        const updatedLeaderboard = getLeaderboard();
+        io.emit('leaderboard-update', updatedLeaderboard);
     });
 
     socket.on('next-question', () => {
@@ -296,15 +491,27 @@ io.on('connection', (socket) => {
 });
 
 function getLeaderboard() {
-    return Object.values(quizState.participants)
-        .sort((a, b) => b.score - a.score)
-        .map((participant, index) => ({
-            rank: index + 1,
-            username: participant.username,
-            score: Math.round(participant.score),
-            correctAnswers: participant.correctAnswers,
-            totalQuestions: questions.length
-        }));
+    const participants = Object.values(quizState.participants);
+    
+    // FIX 4: Proper sorting by score (highest first), then by correct answers, then by time
+    const sortedParticipants = participants.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score; // Higher score first
+        }
+        if (b.correctAnswers !== a.correctAnswers) {
+            return b.correctAnswers - a.correctAnswers; // More correct answers first
+        }
+        return a.totalTime - b.totalTime; // Faster time first
+    });
+    
+    return sortedParticipants.map((participant, index) => ({
+        rank: index + 1,
+        username: participant.username,
+        score: Math.round(participant.score),
+        correctAnswers: participant.correctAnswers,
+        totalQuestions: questions.length,
+        socketId: participant.socketId
+    }));
 }
 
 function getFinalResults() {
@@ -337,4 +544,9 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Total questions loaded: ${questions.length}`);
+    console.log('✅ All fixes applied:');
+    console.log('   - Answer validation and state checking');
+    console.log('   - Duplicate answer prevention');
+    console.log('   - Real-time leaderboard sorting');
+    console.log('   - Proper ranking system');
 });
