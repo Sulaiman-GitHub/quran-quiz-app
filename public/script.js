@@ -16,12 +16,16 @@ socket.on('connect_error', (error) => {
     console.log('❌ Connection error:', error);
 });
 
+// Application state
 let currentUser = null;
 let currentQuestionIndex = 0;
 let timerInterval = null;
-let timeLeft = 20;
+let timeLeft = 10;
 let quizState = null;
 let questions = [];
+let userAnswers = new Array(50).fill(null);
+let correctCount = 0;
+let incorrectCount = 0;
 
 // DOM Elements
 const lobbyScreen = document.getElementById('lobby');
@@ -39,6 +43,10 @@ const options = document.querySelectorAll('.option');
 const leaderboardList = document.getElementById('leaderboardList');
 const finalScore = document.getElementById('finalScore');
 const finalLeaderboard = document.getElementById('finalLeaderboard');
+const questionsReview = document.getElementById('questionsReview');
+const correctCountDisplay = document.getElementById('correctCount');
+const incorrectCountDisplay = document.getElementById('incorrectCount');
+const accuracyDisplay = document.getElementById('accuracy');
 
 // Join Quiz Function
 function joinQuiz() {
@@ -48,18 +56,43 @@ function joinQuiz() {
         return;
     }
     
+    if (username.length < 2) {
+        alert('Please enter a name with at least 2 characters');
+        return;
+    }
+    
     currentUser = username;
     socket.emit('join-quiz', username);
+    
+    // Disable join button to prevent multiple joins
+    usernameInput.disabled = true;
+    document.querySelector('.join-form button').disabled = true;
+    document.querySelector('.join-form button').textContent = 'Joined!';
 }
 
 // Start Quiz Function (Admin only)
 function startQuiz() {
-    socket.emit('start-quiz');
+    if (Object.keys(quizState?.participants || {}).length === 0) {
+        alert('No participants have joined yet!');
+        return;
+    }
+    
+    if (confirm('Start the quiz for all participants? This cannot be undone.')) {
+        socket.emit('start-quiz');
+        document.querySelector('.admin-panel button').disabled = true;
+        document.querySelector('.admin-panel button').textContent = 'Quiz Started!';
+    }
 }
 
 // Select Answer Function
 function selectAnswer(answerIndex) {
     if (!quizState?.isActive) return;
+    
+    // Prevent multiple answers
+    if (userAnswers[currentQuestionIndex] !== null) return;
+    
+    // Store user's answer
+    userAnswers[currentQuestionIndex] = answerIndex;
     
     // Disable all options after selection
     options.forEach(opt => opt.disabled = true);
@@ -67,14 +100,21 @@ function selectAnswer(answerIndex) {
     // Highlight selected answer
     options[answerIndex].classList.add('selected');
     
-    // Check if correct (we'll show visual feedback)
     const question = questions[currentQuestionIndex];
-    if (answerIndex === question.correct) {
+    const isCorrect = answerIndex === question.correct;
+    
+    // Visual feedback
+    if (isCorrect) {
         options[answerIndex].classList.add('correct');
+        correctCount++;
     } else {
         options[answerIndex].classList.add('incorrect');
         options[question.correct].classList.add('correct');
+        incorrectCount++;
     }
+    
+    // Update performance display
+    updatePerformanceDisplay();
     
     // Send answer to server
     socket.emit('submit-answer', {
@@ -82,7 +122,7 @@ function selectAnswer(answerIndex) {
         answerIndex: answerIndex
     });
     
-    // Move to next question after delay
+    // Auto-advance after showing results
     setTimeout(() => {
         socket.emit('next-question');
     }, 2000);
@@ -92,6 +132,7 @@ function selectAnswer(answerIndex) {
 function startTimer(duration) {
     timeLeft = duration;
     timerDisplay.textContent = timeLeft;
+    timerDisplay.classList.remove('warning');
     
     if (timerInterval) clearInterval(timerInterval);
     
@@ -106,13 +147,40 @@ function startTimer(duration) {
         
         if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            // Auto-submit empty answer (wrong)
-            options.forEach(opt => opt.disabled = true);
-            setTimeout(() => {
-                socket.emit('next-question');
-            }, 1000);
+            handleTimeUp();
         }
     }, 1000);
+}
+
+function handleTimeUp() {
+    // Disable all options
+    options.forEach(opt => opt.disabled = true);
+    
+    // Mark as not answered if no answer was selected
+    if (userAnswers[currentQuestionIndex] === null) {
+        userAnswers[currentQuestionIndex] = -1; // -1 means no answer
+        incorrectCount++;
+        updatePerformanceDisplay();
+        
+        // Show correct answer
+        const question = questions[currentQuestionIndex];
+        options[question.correct].classList.add('correct');
+    }
+    
+    // Auto-advance after delay
+    setTimeout(() => {
+        socket.emit('next-question');
+    }, 1500);
+}
+
+// Update Performance Display
+function updatePerformanceDisplay() {
+    correctCountDisplay.textContent = correctCount;
+    incorrectCountDisplay.textContent = incorrectCount;
+    
+    const totalAnswered = correctCount + incorrectCount;
+    const accuracy = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+    accuracyDisplay.textContent = accuracy + '%';
 }
 
 // Update Leaderboard Display
@@ -123,19 +191,145 @@ function updateLeaderboard(leaderboardData) {
         const item = document.createElement('div');
         item.className = `leaderboard-item ${participant.username === currentUser ? 'you' : ''}`;
         item.innerHTML = `
-            <span class="leaderboard-rank">${index + 1}. ${participant.username}</span>
-            <span class="leaderboard-score">${Math.round(participant.score)} pts</span>
+            <span class="leaderboard-rank">${participant.rank}</span>
+            <span class="leaderboard-name">${participant.username}</span>
+            <span class="leaderboard-score">${participant.score}</span>
+            <span class="leaderboard-correct">${participant.correctAnswers}/${participant.totalQuestions}</span>
         `;
         leaderboardList.appendChild(item);
     });
+    
+    // Update current user's score if they're in the leaderboard
+    const currentUserData = leaderboardData.find(p => p.username === currentUser);
+    if (currentUserData) {
+        currentScore.textContent = currentUserData.score;
+    }
+}
+
+// Display Question Function
+function displayQuestion(questionData) {
+    if (!questionData) return;
+    
+    const { question, current, total } = questionData;
+    
+    questionText.textContent = question.question;
+    currentQ.textContent = current;
+    currentQuestionIndex = current - 1;
+    
+    // Store the question
+    questions[currentQuestionIndex] = question;
+    
+    // Reset and enable options
+    options.forEach((opt, index) => {
+        opt.textContent = question.options[index];
+        opt.disabled = false;
+        opt.classList.remove('selected', 'correct', 'incorrect');
+    });
+    
+    // Start timer for this question
+    startTimer(question.timeLimit);
+}
+
+// Show Final Results
+function showFinalResults(finalData) {
+    const { leaderboard, questions: questionResults, totalQuestions } = finalData;
+    
+    // Display final leaderboard
+    finalLeaderboard.innerHTML = '';
+    leaderboard.forEach((participant, index) => {
+        const accuracy = Math.round((participant.correctAnswers / totalQuestions) * 100);
+        const item = document.createElement('div');
+        item.className = `leaderboard-item ${participant.username === currentUser ? 'you' : ''}`;
+        item.innerHTML = `
+            <span class="leaderboard-rank">${participant.rank}</span>
+            <span class="leaderboard-name">${participant.username}</span>
+            <span class="leaderboard-score">${participant.score}</span>
+            <span class="leaderboard-correct">${participant.correctAnswers}/${totalQuestions}</span>
+            <span class="leaderboard-accuracy">${accuracy}%</span>
+        `;
+        finalLeaderboard.appendChild(item);
+    });
+    
+    // Display questions review
+    questionsReview.innerHTML = '';
+    questionResults.forEach((qResult, index) => {
+        const reviewItem = document.createElement('div');
+        reviewItem.className = 'review-item';
+        
+        const userAnswer = userAnswers[index];
+        const userAnswerText = userAnswer !== null && userAnswer !== -1 ? qResult.options[userAnswer] : 'Not answered';
+        const isCorrect = userAnswer === qResult.correctAnswer;
+        
+        reviewItem.innerHTML = `
+            <div class="review-question">${index + 1}. ${qResult.question}</div>
+            <div class="review-answer ${isCorrect ? 'correct' : 'incorrect'}">
+                <div>
+                    <strong>Your answer:</strong> ${userAnswerText}<br>
+                    <strong>Correct answer:</strong> ${qResult.correctText}
+                </div>
+                <span class="answer-status ${isCorrect ? 'correct' : 'incorrect'}">
+                    ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                </span>
+            </div>
+        `;
+        questionsReview.appendChild(reviewItem);
+    });
+    
+    // Show final user score
+    const currentUserResult = leaderboard.find(p => p.username === currentUser);
+    if (currentUserResult) {
+        finalScore.textContent = currentUserResult.score;
+    }
 }
 
 // Return to Lobby
 function returnToLobby() {
     resultsScreen.classList.remove('active');
     lobbyScreen.classList.add('active');
+    
+    // Reset everything
     usernameInput.value = '';
+    usernameInput.disabled = false;
+    document.querySelector('.join-form button').disabled = false;
+    document.querySelector('.join-form button').textContent = 'Join Quiz';
+    adminPanel.style.display = 'none';
+    
     currentUser = null;
+    currentQuestionIndex = 0;
+    userAnswers = new Array(50).fill(null);
+    correctCount = 0;
+    incorrectCount = 0;
+    questions = [];
+    
+    if (timerInterval) clearInterval(timerInterval);
+}
+
+// Share Results Function
+function shareResults() {
+    const currentUserResult = Array.from(finalLeaderboard.children).find(item => 
+        item.classList.contains('you')
+    );
+    
+    if (currentUserResult) {
+        const rank = currentUserResult.querySelector('.leaderboard-rank').textContent;
+        const score = currentUserResult.querySelector('.leaderboard-score').textContent;
+        const correct = currentUserResult.querySelector('.leaderboard-correct').textContent;
+        
+        const shareText = `I scored ${score} points and ranked ${rank} in the QuranQuest Live Quiz! Correct answers: ${correct}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'My QuranQuest Results',
+                text: shareText,
+                url: window.location.href
+            });
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(shareText).then(() => {
+                alert('Results copied to clipboard! You can share them anywhere.');
+            });
+        }
+    }
 }
 
 // Socket Event Listeners
@@ -155,67 +349,29 @@ socket.on('quiz-started', (firstQuestion) => {
     lobbyScreen.classList.remove('active');
     quizScreen.classList.add('active');
     
-    currentQuestionIndex = 0;
-    questions = [firstQuestion];
+    // Reset user answers and performance for new quiz
+    userAnswers = new Array(50).fill(null);
+    correctCount = 0;
+    incorrectCount = 0;
+    updatePerformanceDisplay();
+    
     displayQuestion(firstQuestion);
 });
 
-socket.on('next-question', (question) => {
-    currentQuestionIndex++;
-    questions.push(question);
-    displayQuestion(question);
+socket.on('next-question', (questionData) => {
+    displayQuestion(questionData);
 });
 
 socket.on('leaderboard-update', (leaderboardData) => {
     updateLeaderboard(leaderboardData);
-    
-    // Update current user's score
-    const currentUserData = leaderboardData.find(p => p.username === currentUser);
-    if (currentUserData) {
-        currentScore.textContent = Math.round(currentUserData.score);
-    }
 });
 
-socket.on('quiz-finished', (finalLeaderboardData) => {
+socket.on('quiz-finished', (finalData) => {
     quizScreen.classList.remove('active');
     resultsScreen.classList.add('active');
     
-    // Find current user's final score
-    const userFinalData = finalLeaderboardData.find(p => p.username === currentUser);
-    if (userFinalData) {
-        finalScore.textContent = Math.round(userFinalData.score);
-    }
-    
-    // Display final leaderboard
-    finalLeaderboard.innerHTML = '';
-    finalLeaderboardData.forEach((participant, index) => {
-        const item = document.createElement('div');
-        item.className = `leaderboard-item ${participant.username === currentUser ? 'you' : ''}`;
-        item.innerHTML = `
-            <span class="leaderboard-rank">${index + 1}. ${participant.username}</span>
-            <span class="leaderboard-score">${Math.round(participant.score)} pts</span>
-        `;
-        finalLeaderboard.appendChild(item);
-    });
+    showFinalResults(finalData);
 });
-
-// Display Question Function
-function displayQuestion(question) {
-    if (!question) return;
-    
-    questionText.textContent = question.question;
-    currentQ.textContent = currentQuestionIndex + 1;
-    
-    // Reset and enable options
-    options.forEach((opt, index) => {
-        opt.textContent = question.options[index];
-        opt.disabled = false;
-        opt.classList.remove('selected', 'correct', 'incorrect');
-    });
-    
-    // Start timer for this question
-    startTimer(question.timeLimit);
-}
 
 // Initialize total questions display
 totalQ.textContent = '50';
@@ -231,3 +387,22 @@ usernameInput.addEventListener('keypress', (e) => {
         joinQuiz();
     }
 });
+
+// Prevent form submission on Enter
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && e.target.type !== 'text') {
+        e.preventDefault();
+    }
+});
+
+// Add some console styling for fun
+console.log(`
+%c🎯 QuranQuest Live - Ready! %c
+%cReal-time Quran Knowledge Challenge
+50 Questions × 10 Seconds Each
+Developed with ❤️ for Islamic Education
+`, 
+'background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
+'',
+'color: #2c3e50; font-size: 14px;'
+);
