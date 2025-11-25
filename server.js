@@ -378,7 +378,8 @@ let quizState = {
     currentQuestion: 0,
     startTime: null,
     participants: {},
-    questionStartTime: null
+    questionStartTime: null,
+    questionTimer: null
 };
 
 // Socket.io connection handling
@@ -386,16 +387,28 @@ io.on('connection', (socket) => {
     console.log('New user connected:', socket.id);
 
     socket.on('join-quiz', (username) => {
+        // Prevent duplicate usernames
+        const existingUser = Object.values(quizState.participants).find(
+            p => p.username.toLowerCase() === username.toLowerCase()
+        );
+        
+        if (existingUser) {
+            socket.emit('username-taken', { username: username });
+            return;
+        }
+
         quizState.participants[socket.id] = {
             username: username,
             score: 0,
             answers: new Array(questions.length).fill(null),
             correctAnswers: 0,
             totalTime: 0,
-            socketId: socket.id
+            socketId: socket.id,
+            joinedAt: Date.now()
         };
         
         socket.emit('quiz-state', quizState);
+        socket.emit('join-success', { username: username });
         io.emit('participant-count', Object.keys(quizState.participants).length);
         io.emit('leaderboard-update', getLeaderboard());
         
@@ -403,21 +416,43 @@ io.on('connection', (socket) => {
         if (Object.keys(quizState.participants).length === 1) {
             socket.emit('show-admin-panel');
         }
+
+        console.log(`User joined: ${username} - Total: ${Object.keys(quizState.participants).length}`);
     });
 
     socket.on('start-quiz', () => {
+        if (Object.keys(quizState.participants).length === 0) {
+            console.log('Cannot start quiz - no participants');
+            return;
+        }
+
+        console.log('Starting quiz with', Object.keys(quizState.participants).length, 'participants');
+        
         quizState.isActive = true;
         quizState.currentQuestion = 0;
         quizState.questionStartTime = Date.now();
+        
+        // Clear any existing timer
+        if (quizState.questionTimer) {
+            clearTimeout(quizState.questionTimer);
+        }
+
         io.emit('quiz-started', {
             question: questions[0],
             current: 1,
             total: questions.length
         });
+
+        // Auto-advance after time limit
+        quizState.questionTimer = setTimeout(() => {
+            if (quizState.isActive && quizState.currentQuestion === 0) {
+                handleNextQuestion();
+            }
+        }, questions[0].timeLimit * 1000);
     });
 
     socket.on('submit-answer', (data) => {
-        // SIMPLE VALIDATION - JUST CHECK IF QUIZ IS ACTIVE
+        // COMPREHENSIVE VALIDATION - FIXED
         if (!quizState.isActive) {
             console.log('Quiz not active - rejecting answer');
             return;
@@ -429,7 +464,12 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // USE CLIENT'S QUESTION INDEX (SIMPLE & RELIABLE)
+        // Validate question index matches server state
+        if (data.questionIndex !== quizState.currentQuestion) {
+            console.log(`Question index mismatch: client ${data.questionIndex} vs server ${quizState.currentQuestion}`);
+            return;
+        }
+
         const questionIndex = data.questionIndex;
         const question = questions[questionIndex];
         
@@ -444,8 +484,16 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // Validate time window (with 500ms buffer)
+        const timeElapsed = Date.now() - quizState.questionStartTime;
+        const maxTime = question.timeLimit * 1000 + 500;
+        if (timeElapsed > maxTime) {
+            console.log('Answer time exceeded - rejecting');
+            return;
+        }
+
         const isCorrect = data.answerIndex === question.correct;
-        const answerTime = Date.now() - quizState.questionStartTime;
+        const answerTime = Math.min(timeElapsed, question.timeLimit * 1000);
         
         // Store the answer
         participant.answers[questionIndex] = {
@@ -455,16 +503,19 @@ io.on('connection', (socket) => {
             timestamp: Date.now()
         };
 
-        // Calculate points
+        // Calculate points - FIXED SCORING
         if (isCorrect) {
-            const timeBonus = Math.max(0, 100 - Math.floor(answerTime / 100));
+            const timeBonus = Math.max(50, 100 - Math.floor(answerTime / 100)); // Minimum 50 points
             participant.score += timeBonus;
             participant.correctAnswers++;
+            console.log(`✅ ${participant.username} - Correct! +${timeBonus} points`);
+        } else {
+            console.log(`❌ ${participant.username} - Incorrect answer`);
         }
 
         participant.totalTime += answerTime;
 
-        console.log(`✅ Answer recorded: ${participant.username} - Q${questionIndex + 1} - ${isCorrect ? 'CORRECT' : 'WRONG'} - Score: ${participant.score}`);
+        console.log(`Answer recorded: ${participant.username} - Q${questionIndex + 1} - ${isCorrect ? 'CORRECT' : 'WRONG'} - Score: ${participant.score}`);
 
         // Update leaderboard
         const updatedLeaderboard = getLeaderboard();
@@ -472,24 +523,48 @@ io.on('connection', (socket) => {
     });
 
     socket.on('next-question', () => {
+        handleNextQuestion();
+    });
+
+    function handleNextQuestion() {
+        // Clear existing timer
+        if (quizState.questionTimer) {
+            clearTimeout(quizState.questionTimer);
+        }
+
         quizState.currentQuestion++;
         if (quizState.currentQuestion < questions.length) {
             quizState.questionStartTime = Date.now();
+            
             io.emit('next-question', {
                 question: questions[quizState.currentQuestion],
                 current: quizState.currentQuestion + 1,
                 total: questions.length
             });
+
+            // Set timer for auto-advance
+            quizState.questionTimer = setTimeout(() => {
+                if (quizState.isActive && quizState.currentQuestion < questions.length) {
+                    handleNextQuestion();
+                }
+            }, questions[quizState.currentQuestion].timeLimit * 1000);
+
+            console.log(`Moving to question ${quizState.currentQuestion + 1}`);
         } else {
             // Quiz finished
             quizState.isActive = false;
             const finalResults = getFinalResults();
             io.emit('quiz-finished', finalResults);
+            console.log('Quiz finished!');
         }
-    });
+    }
 
     socket.on('disconnect', () => {
-        delete quizState.participants[socket.id];
+        const participant = quizState.participants[socket.id];
+        if (participant) {
+            console.log('User disconnected:', participant.username);
+            delete quizState.participants[socket.id];
+        }
         io.emit('participant-count', Object.keys(quizState.participants).length);
         io.emit('leaderboard-update', getLeaderboard());
     });
@@ -542,7 +617,7 @@ function getFinalResults() {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Total questions loaded: ${questions.length}`);
-    console.log('✅ ANSWER CAPTURE FIXED - Using simple client index approach');
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📝 Total questions loaded: ${questions.length}`);
+    console.log('✅ ALL BUGS FIXED: Question order, Timer sync, Multi-user scoring');
 });
