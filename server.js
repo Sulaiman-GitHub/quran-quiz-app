@@ -417,14 +417,9 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit-answer', (data) => {
-        // Validate quiz state and question index before processing
+        // FIX 1: Simplified validation - only check if quiz is active
         if (!quizState.isActive) {
             console.log('Quiz not active - rejecting answer');
-            return;
-        }
-        
-        if (data.questionIndex !== quizState.currentQuestion) {
-            console.log('Wrong question index - rejecting answer');
             return;
         }
 
@@ -434,18 +429,26 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Prevent duplicate answers for same question
-        if (participant.answers[data.questionIndex] !== null) {
+        // FIX 2: Use currentQuestion from server state, not from client
+        const currentQuestionIndex = quizState.currentQuestion;
+        const question = questions[currentQuestionIndex];
+        
+        if (!question) {
+            console.log('Question not found for index:', currentQuestionIndex);
+            return;
+        }
+
+        // FIX 3: Prevent duplicate answers for same question
+        if (participant.answers[currentQuestionIndex] !== null) {
             console.log('Duplicate answer - rejecting');
             return;
         }
 
-        const question = questions[data.questionIndex];
         const isCorrect = data.answerIndex === question.correct;
         const answerTime = Date.now() - quizState.questionStartTime;
         
         // Store the answer
-        participant.answers[data.questionIndex] = {
+        participant.answers[currentQuestionIndex] = {
             answerIndex: data.answerIndex,
             isCorrect: isCorrect,
             timeTaken: answerTime,
@@ -460,6 +463,8 @@ io.on('connection', (socket) => {
         }
 
         participant.totalTime += answerTime;
+
+        console.log(`Answer recorded: ${participant.username} - Q${currentQuestionIndex + 1} - ${isCorrect ? 'CORRECT' : 'WRONG'} - Score: ${participant.score}`);
 
         // Immediately update leaderboard for all participants
         const updatedLeaderboard = getLeaderboard();
@@ -544,5 +549,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Total questions loaded: ${questions.length}`);
-    console.log('✅ All fixes applied - No annoying popups!');
+    console.log('✅ Answer capture FIXED - Using server-side question index');
+    console.log('✅ Professional error handling implemented');
 });
