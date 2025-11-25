@@ -127,7 +127,7 @@ function showActiveQuiz() {
     }
 }
 
-// Select Answer Function - COMPLETELY FIXED
+// Select Answer Function - FIXED SCORING
 function selectAnswer(answerIndex) {
     console.log('Answer selected:', answerIndex, 'Current question:', currentQuestionIndex);
     
@@ -173,7 +173,7 @@ function selectAnswer(answerIndex) {
         console.log('❌ Incorrect answer selected');
     }
     
-    // Update performance display
+    // Update performance display IMMEDIATELY
     updatePerformanceDisplay();
     
     // Send answer to server with current question index
@@ -193,7 +193,7 @@ function selectAnswer(answerIndex) {
     }, 2000);
 }
 
-// Timer Function - FIXED
+// Timer Function
 function startTimer(duration) {
     timeLeft = duration;
     timerDisplay.textContent = timeLeft;
@@ -250,7 +250,7 @@ function handleTimeUp() {
     }, 1500);
 }
 
-// Update Performance Display
+// Update Performance Display - FIXED
 function updatePerformanceDisplay() {
     correctCountDisplay.textContent = correctCount;
     incorrectCountDisplay.textContent = incorrectCount;
@@ -258,9 +258,11 @@ function updatePerformanceDisplay() {
     const totalAnswered = correctCount + incorrectCount;
     const accuracy = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
     accuracyDisplay.textContent = accuracy + '%';
+    
+    console.log(`📊 Performance updated: ${correctCount} correct, ${incorrectCount} incorrect, ${accuracy}% accuracy`);
 }
 
-// Update Leaderboard Display - FIXED
+// Update Leaderboard Display - COMPLETELY FIXED
 function updateLeaderboard(leaderboardData) {
     const previousLeaderboard = [...lastLeaderboard];
     lastLeaderboard = leaderboardData;
@@ -297,11 +299,14 @@ function updateLeaderboard(leaderboardData) {
     if (currentUserData) {
         currentScore.textContent = currentUserData.score;
         
-        // Update performance counts from server data
+        // Update performance counts from server data (more accurate)
         correctCount = currentUserData.correctAnswers;
-        const questionsAnswered = userAnswers.filter(answer => answer !== null).length;
+        // Calculate incorrect based on questions answered so far
+        const questionsAnswered = userAnswers.filter(answer => answer !== null && answer !== -1).length;
         incorrectCount = questionsAnswered - correctCount;
         updatePerformanceDisplay();
+        
+        console.log(`🎯 User ${currentUser} - Score: ${currentUserData.score}, Correct: ${correctCount}/${questionsAnswered}`);
     }
     
     // Update waiting message participant count
@@ -311,7 +316,7 @@ function updateLeaderboard(leaderboardData) {
     }
 }
 
-// Display Question Function - FIXED
+// Display Question Function
 function displayQuestion(questionData) {
     if (!questionData) return;
     
@@ -443,7 +448,7 @@ function shareResults() {
     }
 }
 
-// Socket Event Listeners - ADDED NEW LISTENERS
+// Socket Event Listeners - ADDED SCORE UPDATE
 socket.on('quiz-state', (state) => {
     quizState = state;
     console.log('Quiz state updated - Active:', state.isActive);
@@ -497,6 +502,14 @@ socket.on('leaderboard-update', (leaderboardData) => {
     updateLeaderboard(leaderboardData);
 });
 
+// NEW: Individual score update for immediate feedback
+socket.on('score-update', (data) => {
+    console.log('🎯 Personal score update:', data);
+    currentScore.textContent = data.score;
+    correctCount = data.correctAnswers;
+    updatePerformanceDisplay();
+});
+
 socket.on('quiz-finished', (finalData) => {
     console.log('🎉 Quiz finished!');
     quizScreen.classList.remove('active');
@@ -528,14 +541,14 @@ document.addEventListener('keypress', (e) => {
 });
 
 console.log(`
-%c🎯 QuranQuest Live - ALL BUGS FIXED %c
-%c✅ Question order fixed (1-50 sequential)
-✅ Timer synchronization fixed  
-✅ Multi-user scoring working
-✅ Auto-advance conflicts resolved
-✅ Duplicate answer prevention
+%c🎯 QuranQuest Live - SCORING SYSTEM FIXED %c
+%c✅ Real-time leaderboard updates
+✅ Live score tracking  
+✅ Performance statistics working
+✅ Multi-user scoring synchronized
+✅ Immediate feedback on answers
 `, 
-'background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
+'background: linear-gradient(135deg, #e74c3c, #e67e22); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
 '',
 'color: #27ae60; font-size: 14px; font-weight: bold;'
 );
