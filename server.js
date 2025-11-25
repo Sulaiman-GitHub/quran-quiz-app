@@ -452,7 +452,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit-answer', (data) => {
-        // COMPREHENSIVE VALIDATION - FIXED
+        // COMPREHENSIVE VALIDATION - FIXED SCORING
         if (!quizState.isActive) {
             console.log('Quiz not active - rejecting answer');
             return;
@@ -503,23 +503,35 @@ io.on('connection', (socket) => {
             timestamp: Date.now()
         };
 
-        // Calculate points - FIXED SCORING
+        // FIXED SCORING CALCULATION - MAJOR FIX
         if (isCorrect) {
-            const timeBonus = Math.max(50, 100 - Math.floor(answerTime / 100)); // Minimum 50 points
-            participant.score += timeBonus;
+            // Calculate points based on speed (faster = more points)
+            const maxPoints = 100;
+            const timeFactor = Math.max(0.3, 1 - (answerTime / (question.timeLimit * 1000))); // At least 30% of points
+            const pointsEarned = Math.round(maxPoints * timeFactor);
+            
+            participant.score += pointsEarned;
             participant.correctAnswers++;
-            console.log(`✅ ${participant.username} - Correct! +${timeBonus} points`);
+            
+            console.log(`✅ ${participant.username} - Correct! +${pointsEarned} points (Time: ${answerTime}ms)`);
         } else {
             console.log(`❌ ${participant.username} - Incorrect answer`);
+            // No points for incorrect answers
         }
 
         participant.totalTime += answerTime;
 
-        console.log(`Answer recorded: ${participant.username} - Q${questionIndex + 1} - ${isCorrect ? 'CORRECT' : 'WRONG'} - Score: ${participant.score}`);
+        console.log(`📊 ${participant.username} - Score: ${participant.score}, Correct: ${participant.correctAnswers}/${questions.length}`);
 
-        // Update leaderboard
+        // IMMEDIATE leaderboard update after each answer
         const updatedLeaderboard = getLeaderboard();
         io.emit('leaderboard-update', updatedLeaderboard);
+        
+        // Also send individual score update to the user who answered
+        socket.emit('score-update', {
+            score: participant.score,
+            correctAnswers: participant.correctAnswers
+        });
     });
 
     socket.on('next-question', () => {
@@ -555,7 +567,7 @@ io.on('connection', (socket) => {
             quizState.isActive = false;
             const finalResults = getFinalResults();
             io.emit('quiz-finished', finalResults);
-            console.log('Quiz finished!');
+            console.log('🎉 Quiz finished! Final scores:', getLeaderboard().map(p => `${p.username}: ${p.score}`));
         }
     }
 
@@ -619,5 +631,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 Total questions loaded: ${questions.length}`);
-    console.log('✅ ALL BUGS FIXED: Question order, Timer sync, Multi-user scoring');
+    console.log('✅ SCORING SYSTEM FIXED: Real-time leaderboard updates working');
 });
