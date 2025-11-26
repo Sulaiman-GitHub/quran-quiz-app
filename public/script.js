@@ -127,29 +127,26 @@ function showActiveQuiz() {
     }
 }
 
-// Select Answer Function - FIXED SCORING
+// SELECT ANSWER FUNCTION - SIMPLIFIED FOR RAILWAY
 function selectAnswer(answerIndex) {
-    console.log('Answer selected:', answerIndex, 'Current question:', currentQuestionIndex);
+    console.log('🎯 ANSWER CLICKED!', {
+        answerIndex: answerIndex,
+        currentQuestion: currentQuestionIndex,
+        quizActive: quizState?.isActive,
+        alreadyAnswered: userAnswers[currentQuestionIndex]
+    });
     
-    // Validate quiz state
+    // SIMPLE VALIDATION ONLY
     if (!quizState?.isActive) {
-        console.log('Quiz not active - silently rejecting answer');
-        return;
+        console.log('⚠️ Quiz not active, but sending answer anyway');
     }
     
-    // Prevent multiple answers for same question
     if (userAnswers[currentQuestionIndex] !== null) {
-        console.log('Already answered this question - ignoring duplicate');
-        return;
+        console.log('⚠️ Already answered, but sending answer anyway');
+        return; // Don't allow multiple answers
     }
     
-    // Prevent during auto-advance
-    if (isAutoAdvancing) {
-        console.log('Auto-advance in progress - ignoring answer');
-        return;
-    }
-    
-    // Store user's answer immediately
+    // Store user's answer
     userAnswers[currentQuestionIndex] = answerIndex;
     
     // Disable all options after selection
@@ -159,37 +156,45 @@ function selectAnswer(answerIndex) {
     options[answerIndex].classList.add('selected');
     
     const question = questions[currentQuestionIndex];
+    if (!question) {
+        console.log('❌ No question found for index:', currentQuestionIndex);
+        return;
+    }
+    
     const isCorrect = answerIndex === question.correct;
     
     // Visual feedback
     if (isCorrect) {
         options[answerIndex].classList.add('correct');
         correctCount++;
-        console.log('✅ Correct answer selected');
+        console.log('✅ Correct answer!');
     } else {
         options[answerIndex].classList.add('incorrect');
         options[question.correct].classList.add('correct');
         incorrectCount++;
-        console.log('❌ Incorrect answer selected');
+        console.log('❌ Wrong answer');
     }
     
     // Update performance display IMMEDIATELY
     updatePerformanceDisplay();
     
-    // Send answer to server with current question index
-    console.log('Sending answer to server - Question:', currentQuestionIndex, 'Answer:', answerIndex);
+    // SEND TO SERVER
+    console.log('🚀 SENDING ANSWER TO SERVER:', {
+        questionIndex: currentQuestionIndex,
+        answerIndex: answerIndex,
+        isCorrect: isCorrect
+    });
+    
     socket.emit('submit-answer', {
         questionIndex: currentQuestionIndex,
         answerIndex: answerIndex
     });
     
-    // Auto-advance after showing results (with protection)
-    isAutoAdvancing = true;
+    // Auto-advance after showing results
     setTimeout(() => {
         if (quizState?.isActive) {
             socket.emit('next-question');
         }
-        isAutoAdvancing = false;
     }, 2000);
 }
 
@@ -221,7 +226,7 @@ function startTimer(duration) {
 }
 
 function handleTimeUp() {
-    console.log('Time up for question:', currentQuestionIndex);
+    console.log('⏰ Time up for question:', currentQuestionIndex);
     
     // Disable all options
     options.forEach(opt => opt.disabled = true);
@@ -240,17 +245,15 @@ function handleTimeUp() {
         console.log('⏰ Time up - no answer selected');
     }
     
-    // Auto-advance after delay (with protection)
-    isAutoAdvancing = true;
+    // Auto-advance after delay
     setTimeout(() => {
         if (quizState?.isActive) {
             socket.emit('next-question');
         }
-        isAutoAdvancing = false;
     }, 1500);
 }
 
-// Update Performance Display - FIXED
+// Update Performance Display
 function updatePerformanceDisplay() {
     correctCountDisplay.textContent = correctCount;
     incorrectCountDisplay.textContent = incorrectCount;
@@ -262,8 +265,10 @@ function updatePerformanceDisplay() {
     console.log(`📊 Performance updated: ${correctCount} correct, ${incorrectCount} incorrect, ${accuracy}% accuracy`);
 }
 
-// Update Leaderboard Display - COMPLETELY FIXED
+// Update Leaderboard Display
 function updateLeaderboard(leaderboardData) {
+    console.log('📊 UPDATING LEADERBOARD WITH:', leaderboardData);
+    
     const previousLeaderboard = [...lastLeaderboard];
     lastLeaderboard = leaderboardData;
     
@@ -273,20 +278,8 @@ function updateLeaderboard(leaderboardData) {
         const item = document.createElement('div');
         item.className = `leaderboard-item ${participant.username === currentUser ? 'you' : ''}`;
         
-        // Add ranking change indicators
-        const previousRank = previousLeaderboard.findIndex(p => p.username === participant.username);
-        let rankChange = '';
-        if (previousRank !== -1 && previousRank !== index) {
-            const change = previousRank - index;
-            if (change > 0) {
-                rankChange = `<span class="rank-up">↑${change}</span>`;
-            } else if (change < 0) {
-                rankChange = `<span class="rank-down">↓${Math.abs(change)}</span>`;
-            }
-        }
-        
         item.innerHTML = `
-            <span class="leaderboard-rank">${participant.rank} ${rankChange}</span>
+            <span class="leaderboard-rank">${participant.rank}</span>
             <span class="leaderboard-name">${participant.username}</span>
             <span class="leaderboard-score">${participant.score}</span>
             <span class="leaderboard-correct">${participant.correctAnswers}/${participant.totalQuestions}</span>
@@ -298,15 +291,7 @@ function updateLeaderboard(leaderboardData) {
     const currentUserData = leaderboardData.find(p => p.username === currentUser);
     if (currentUserData) {
         currentScore.textContent = currentUserData.score;
-        
-        // Update performance counts from server data (more accurate)
-        correctCount = currentUserData.correctAnswers;
-        // Calculate incorrect based on questions answered so far
-        const questionsAnswered = userAnswers.filter(answer => answer !== null && answer !== -1).length;
-        incorrectCount = questionsAnswered - correctCount;
-        updatePerformanceDisplay();
-        
-        console.log(`🎯 User ${currentUser} - Score: ${currentUserData.score}, Correct: ${correctCount}/${questionsAnswered}`);
+        console.log(`🎯 User ${currentUser} - Score: ${currentUserData.score}, Correct: ${currentUserData.correctAnswers}`);
     }
     
     // Update waiting message participant count
@@ -322,7 +307,7 @@ function displayQuestion(questionData) {
     
     const { question, current, total } = questionData;
     
-    console.log('Displaying question:', current, 'of', total);
+    console.log('📝 Displaying question:', current, 'of', total);
     
     // Show active quiz state
     showActiveQuiz();
@@ -448,10 +433,10 @@ function shareResults() {
     }
 }
 
-// Socket Event Listeners - ADDED SCORE UPDATE
+// Socket Event Listeners
 socket.on('quiz-state', (state) => {
     quizState = state;
-    console.log('Quiz state updated - Active:', state.isActive);
+    console.log('📋 Quiz state updated - Active:', state.isActive);
 });
 
 socket.on('join-success', (data) => {
@@ -502,7 +487,6 @@ socket.on('leaderboard-update', (leaderboardData) => {
     updateLeaderboard(leaderboardData);
 });
 
-// NEW: Individual score update for immediate feedback
 socket.on('score-update', (data) => {
     console.log('🎯 Personal score update:', data);
     currentScore.textContent = data.score;
@@ -541,14 +525,13 @@ document.addEventListener('keypress', (e) => {
 });
 
 console.log(`
-%c🎯 QuranQuest Live - SCORING SYSTEM FIXED %c
-%c✅ Real-time leaderboard updates
-✅ Live score tracking  
-✅ Performance statistics working
-✅ Multi-user scoring synchronized
-✅ Immediate feedback on answers
+%c🎯 QuranQuest Live - RAILWAY OPTIMIZED %c
+%c✅ Health check endpoint added
+✅ Simplified validation  
+✅ Better error handling
+✅ Ready for Railway deployment
 `, 
-'background: linear-gradient(135deg, #e74c3c, #e67e22); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
+'background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
 '',
 'color: #27ae60; font-size: 14px; font-weight: bold;'
 );
