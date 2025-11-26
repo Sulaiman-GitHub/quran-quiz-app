@@ -1,40 +1,11 @@
 // Socket.io connection
 const socket = io({
-    transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    timeout: 20000
+    transports: ['websocket', 'polling']
 });
 
 // Connection status monitoring
 socket.on('connect', () => {
     console.log('✅ Connected to server');
-    // Re-sync state if reconnected
-    if (currentUser && quizState) {
-        socket.emit('rejoin-quiz', {
-            username: currentUser,
-            lastQuestion: currentQuestionIndex
-        });
-    }
-});
-
-socket.on('reconnect', (attempt) => {
-    console.log(`🔄 Reconnected after ${attempt} attempts`);
-    // Force refresh the current question
-    if (quizState?.isActive) {
-        socket.emit('get-current-question');
-    }
-});
-
-socket.on('reconnect_error', (error) => {
-    console.log('❌ Reconnection failed:', error);
-});
-
-socket.on('reconnect_failed', () => {
-    console.log('💥 Failed to reconnect');
-    alert('Connection lost. Please refresh the page.');
 });
 
 socket.on('disconnect', () => {
@@ -43,14 +14,6 @@ socket.on('disconnect', () => {
 
 socket.on('connect_error', (error) => {
     console.log('❌ Connection error:', error);
-});
-
-// Add this new event listener
-socket.on('connection-restored', (data) => {
-    console.log('🔗 Connection restored, state synced');
-    if (data.leaderboard) {
-        updateLeaderboard(data.leaderboard);
-    }
 });
 
 // Application state
@@ -403,6 +366,9 @@ function showFinalResults(finalData) {
                 <div>
                     <strong>Your answer:</strong> ${userAnswerText}<br>
                     <strong>Correct answer:</strong> ${qResult.correctText}
+                </div>
+                <span class="answer-status ${isCorrect ? 'correct' : 'incorrect'}">
+                    ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
                 </span>
             </div>
         `;
@@ -559,12 +525,13 @@ document.addEventListener('keypress', (e) => {
 });
 
 console.log(`
-%c🎯 QuranQuest Live - MULTI-USER STABLE %c
-%c✅ Enhanced reconnection added
-✅ 15+ users supported  
-✅ Auto-recovery from drops
+%c🎯 QuranQuest Live - RAILWAY OPTIMIZED %c
+%c✅ Health check endpoint added
+✅ Simplified validation  
+✅ Better error handling
+✅ Ready for Railway deployment
 `, 
-'background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
+'background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
 '',
-'color: #9b59b6; font-size: 14px; font-weight: bold;'
+'color: #27ae60; font-size: 14px; font-weight: bold;'
 );
