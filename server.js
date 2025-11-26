@@ -627,14 +627,22 @@ function getFinalResults() {
     };
 }
 
+// Add health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'QuranQuiz server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 Total questions loaded: ${questions.length}`);
     console.log('✅ QuranQuest Live Quiz Server Started!');
-});
-
-// Add error handling
-server.on('error', (error) => {
-    console.error('❌ Server error:', error);
 });
