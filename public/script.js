@@ -1,21 +1,57 @@
-// Socket.io connection
+// Socket.io connection with reconnection
 const socket = io({
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000
 });
 
-// Connection status monitoring
+// Enhanced connection monitoring
 socket.on('connect', () => {
     console.log('✅ Connected to server');
+    // Re-sync state if reconnected
+    if (currentUser && quizState) {
+        socket.emit('rejoin-quiz', {
+            username: currentUser,
+            lastQuestion: currentQuestionIndex
+        });
+    }
 });
 
-socket.on('disconnect', () => {
-    console.log('❌ Disconnected from server');
+socket.on('reconnect', (attempt) => {
+    console.log(`🔄 Reconnected after ${attempt} attempts`);
+    // Force refresh the current question
+    if (quizState?.isActive) {
+        socket.emit('get-current-question');
+    }
+});
+
+socket.on('reconnect_error', (error) => {
+    console.log('❌ Reconnection failed:', error);
+});
+
+socket.on('reconnect_failed', () => {
+    console.log('💥 Failed to reconnect');
+    alert('Connection lost. Please refresh the page.');
+});
+
+socket.on('disconnect', (reason) => {
+    console.log('❌ Disconnected from server:', reason);
 });
 
 socket.on('connect_error', (error) => {
     console.log('❌ Connection error:', error);
 });
 
+// Add this new event listener
+socket.on('connection-restored', (data) => {
+    console.log('🔗 Connection restored, state synced');
+    if (data.leaderboard) {
+        updateLeaderboard(data.leaderboard);
+    }
+});
 // Application state
 let currentUser = null;
 let currentQuestionIndex = 0;
