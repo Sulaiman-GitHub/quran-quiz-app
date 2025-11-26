@@ -15,6 +15,15 @@ const io = socketIo(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// HEALTH CHECK ENDPOINT - REQUIRED FOR RAILWAY
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'QuranQuiz server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -452,7 +461,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit-answer', (data) => {
-        // COMPREHENSIVE VALIDATION - FIXED SCORING
+        // SIMPLIFIED VALIDATION FOR RAILWAY
         if (!quizState.isActive) {
             console.log('Quiz not active - rejecting answer');
             return;
@@ -461,12 +470,6 @@ io.on('connection', (socket) => {
         const participant = quizState.participants[socket.id];
         if (!participant) {
             console.log('Participant not found - rejecting answer');
-            return;
-        }
-
-        // Validate question index matches server state
-        if (data.questionIndex !== quizState.currentQuestion) {
-            console.log(`Question index mismatch: client ${data.questionIndex} vs server ${quizState.currentQuestion}`);
             return;
         }
 
@@ -484,16 +487,8 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Validate time window (with 500ms buffer)
-        const timeElapsed = Date.now() - quizState.questionStartTime;
-        const maxTime = question.timeLimit * 1000 + 500;
-        if (timeElapsed > maxTime) {
-            console.log('Answer time exceeded - rejecting');
-            return;
-        }
-
         const isCorrect = data.answerIndex === question.correct;
-        const answerTime = Math.min(timeElapsed, question.timeLimit * 1000);
+        const answerTime = Date.now() - quizState.questionStartTime;
         
         // Store the answer
         participant.answers[questionIndex] = {
@@ -503,31 +498,25 @@ io.on('connection', (socket) => {
             timestamp: Date.now()
         };
 
-        // FIXED SCORING CALCULATION - MAJOR FIX
+        // SIMPLIFIED SCORING - WORKS RELIABLY
         if (isCorrect) {
-            // Calculate points based on speed (faster = more points)
-            const maxPoints = 100;
-            const timeFactor = Math.max(0.3, 1 - (answerTime / (question.timeLimit * 1000))); // At least 30% of points
-            const pointsEarned = Math.round(maxPoints * timeFactor);
-            
-            participant.score += pointsEarned;
+            const timeBonus = Math.max(50, 100 - Math.floor(answerTime / 100));
+            participant.score += timeBonus;
             participant.correctAnswers++;
-            
-            console.log(`✅ ${participant.username} - Correct! +${pointsEarned} points (Time: ${answerTime}ms)`);
+            console.log(`✅ ${participant.username} - Correct! +${timeBonus} points`);
         } else {
             console.log(`❌ ${participant.username} - Incorrect answer`);
-            // No points for incorrect answers
         }
 
         participant.totalTime += answerTime;
 
-        console.log(`📊 ${participant.username} - Score: ${participant.score}, Correct: ${participant.correctAnswers}/${questions.length}`);
+        console.log(`📊 ${participant.username} - Score: ${participant.score}, Correct: ${participant.correctAnswers}`);
 
-        // IMMEDIATE leaderboard update after each answer
+        // IMMEDIATE leaderboard update
         const updatedLeaderboard = getLeaderboard();
         io.emit('leaderboard-update', updatedLeaderboard);
         
-        // Also send individual score update to the user who answered
+        // Individual score update
         socket.emit('score-update', {
             score: participant.score,
             correctAnswers: participant.correctAnswers
@@ -567,7 +556,7 @@ io.on('connection', (socket) => {
             quizState.isActive = false;
             const finalResults = getFinalResults();
             io.emit('quiz-finished', finalResults);
-            console.log('🎉 Quiz finished! Final scores:', getLeaderboard().map(p => `${p.username}: ${p.score}`));
+            console.log('🎉 Quiz finished!');
         }
     }
 
@@ -627,22 +616,14 @@ function getFinalResults() {
     };
 }
 
-// Add health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'QuranQuiz server is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 Total questions loaded: ${questions.length}`);
     console.log('✅ QuranQuest Live Quiz Server Started!');
+});
+
+// Add error handling
+server.on('error', (error) => {
+    console.error('❌ Server error:', error);
 });
