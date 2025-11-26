@@ -526,25 +526,7 @@ io.on('connection', (socket) => {
     socket.on('next-question', () => {
         handleNextQuestion();
     });
-    
-
-    function handleNextQuestion() {
-        // Clear existing timer
-        if (quizState.questionTimer) {
-            clearTimeout(quizState.questionTimer);
-        }
-
-        quizState.currentQuestion++;
-        if (quizState.currentQuestion < questions.length) {
-            quizState.questionStartTime = Date.now();
-            
-            io.emit('next-question', {
-                question: questions[quizState.currentQuestion],
-                current: quizState.currentQuestion + 1,
-                total: questions.length
-            });
-
-            // Handle reconnection requests
+      // Handle reconnection requests
 socket.on('rejoin-quiz', (data) => {
     const participant = quizState.participants[socket.id];
     if (participant && participant.username === data.username) {
@@ -568,6 +550,24 @@ socket.on('get-current-question', () => {
         });
     }
 });
+
+    function handleNextQuestion() {
+        // Clear existing timer
+        if (quizState.questionTimer) {
+            clearTimeout(quizState.questionTimer);
+        }
+
+        quizState.currentQuestion++;
+        if (quizState.currentQuestion < questions.length) {
+            quizState.questionStartTime = Date.now();
+            
+            io.emit('next-question', {
+                question: questions[quizState.currentQuestion],
+                current: quizState.currentQuestion + 1,
+                total: questions.length
+            });
+
+          
             // Set timer for auto-advance
             quizState.questionTimer = setTimeout(() => {
                 if (quizState.isActive && quizState.currentQuestion < questions.length) {
