@@ -1,7 +1,6 @@
 {
   "name": "quran-quiz-app",
   "version": "1.0.0",
-  "description": "Real-time Quran Quiz Application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,8 +8,5 @@
   "dependencies": {
     "express": "^4.18.0",
     "socket.io": "^4.7.0"
-  },
-  "keywords": ["quiz", "quran", "real-time"],
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
