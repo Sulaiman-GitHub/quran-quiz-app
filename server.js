@@ -526,6 +526,7 @@ io.on('connection', (socket) => {
     socket.on('next-question', () => {
         handleNextQuestion();
     });
+    
 
     function handleNextQuestion() {
         // Clear existing timer
@@ -543,6 +544,30 @@ io.on('connection', (socket) => {
                 total: questions.length
             });
 
+            // Handle reconnection requests
+socket.on('rejoin-quiz', (data) => {
+    const participant = quizState.participants[socket.id];
+    if (participant && participant.username === data.username) {
+        console.log(`🔄 ${data.username} reconnected`);
+        // Send current state
+        socket.emit('connection-restored', {
+            leaderboard: getLeaderboard(),
+            currentQuestion: quizState.currentQuestion,
+            isActive: quizState.isActive
+        });
+    }
+});
+
+// Send current question
+socket.on('get-current-question', () => {
+    if (quizState.isActive && quizState.currentQuestion < questions.length) {
+        socket.emit('current-question', {
+            question: questions[quizState.currentQuestion],
+            current: quizState.currentQuestion + 1,
+            total: questions.length
+        });
+    }
+});
             // Set timer for auto-advance
             quizState.questionTimer = setTimeout(() => {
                 if (quizState.isActive && quizState.currentQuestion < questions.length) {
