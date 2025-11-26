@@ -1,4 +1,4 @@
-// Socket.io connection with reconnection
+// Socket.io connection
 const socket = io({
     transports: ['websocket', 'polling'],
     reconnection: true,
@@ -8,7 +8,7 @@ const socket = io({
     timeout: 20000
 });
 
-// Enhanced connection monitoring
+// Connection status monitoring
 socket.on('connect', () => {
     console.log('✅ Connected to server');
     // Re-sync state if reconnected
@@ -37,8 +37,8 @@ socket.on('reconnect_failed', () => {
     alert('Connection lost. Please refresh the page.');
 });
 
-socket.on('disconnect', (reason) => {
-    console.log('❌ Disconnected from server:', reason);
+socket.on('disconnect', () => {
+    console.log('❌ Disconnected from server');
 });
 
 socket.on('connect_error', (error) => {
@@ -52,6 +52,7 @@ socket.on('connection-restored', (data) => {
         updateLeaderboard(data.leaderboard);
     }
 });
+
 // Application state
 let currentUser = null;
 let currentQuestionIndex = 0;
@@ -402,9 +403,6 @@ function showFinalResults(finalData) {
                 <div>
                     <strong>Your answer:</strong> ${userAnswerText}<br>
                     <strong>Correct answer:</strong> ${qResult.correctText}
-                </div>
-                <span class="answer-status ${isCorrect ? 'correct' : 'incorrect'}">
-                    ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
                 </span>
             </div>
         `;
@@ -561,13 +559,12 @@ document.addEventListener('keypress', (e) => {
 });
 
 console.log(`
-%c🎯 QuranQuest Live - RAILWAY OPTIMIZED %c
-%c✅ Health check endpoint added
-✅ Simplified validation  
-✅ Better error handling
-✅ Ready for Railway deployment
+%c🎯 QuranQuest Live - MULTI-USER STABLE %c
+%c✅ Enhanced reconnection added
+✅ 15+ users supported  
+✅ Auto-recovery from drops
 `, 
-'background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
+'background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 10px; border-radius: 5px; font-size: 16px; font-weight: bold;',
 '',
-'color: #27ae60; font-size: 14px; font-weight: bold;'
+'color: #9b59b6; font-size: 14px; font-weight: bold;'
 );
