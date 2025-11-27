@@ -502,6 +502,11 @@ socket.on('quiz-finished', (finalData) => {
     showFinalResults(finalData);
 });
 
+// Keep connection alive during quiz
+socket.on('heartbeat', (data) => {
+    console.log('💓 Heartbeat received', data);
+});
+
 // Initialize total questions display
 totalQ.textContent = '50';
 
