@@ -616,6 +616,17 @@ function getFinalResults() {
     };
 }
 
+// HEARTBEAT - Keep connections alive during long quizzes
+setInterval(() => {
+    if (Object.keys(quizState.participants).length > 0) {
+        io.emit('heartbeat', { 
+            timestamp: Date.now(),
+            participants: Object.keys(quizState.participants).length 
+        });
+        console.log('💓 Heartbeat sent to', Object.keys(quizState.participants).length, 'participants');
+    }
+}, 30000); // Every 30 seconds
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
