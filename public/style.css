@@ -24,7 +24,7 @@ body {
 header {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
-    padding: 10px;
+    padding: 5px;
     text-align: center;
 }
 
@@ -40,7 +40,7 @@ header p {
 
 .screen {
     display: none;
-    padding: 20px;
+    padding: 10px;
 }
 
 .screen.active {
@@ -64,7 +64,7 @@ header p {
 }
 
 button {
-    padding: 12px 25px;
+    padding: 10px 20px;
     font-size: 1em;
     background: #27ae60;
     color: white;
