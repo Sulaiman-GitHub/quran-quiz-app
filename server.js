@@ -499,12 +499,21 @@ io.on('connection', (socket) => {
         };
 
         // SIMPLIFIED SCORING - WORKS RELIABLY
-        if (isCorrect) {
-            const timeBonus = Math.max(50, 100 - Math.floor(answerTime / 100));
-            participant.score += timeBonus;
-            participant.correctAnswers++;
-            console.log(`✅ ${participant.username} - Correct! +${timeBonus} points`);
-        } else {
+        // BETTER SCORING - Accuracy matters more than speed
+if (isCorrect) {
+    // Base points for correct answer
+    const basePoints = 80;
+    
+    // Speed bonus (max 20 points for instant answer)
+    const maxTime = question.timeLimit * 1000; // 15 seconds in milliseconds
+    const speedBonus = Math.max(0, 20 - Math.floor((answerTime / maxTime) * 20));
+    
+    const totalPoints = basePoints + speedBonus;
+    participant.score += totalPoints;
+    participant.correctAnswers++;
+    
+    console.log(`✅ ${participant.username} - Correct! +${totalPoints} points (${basePoints} base + ${speedBonus} speed)`);
+}else {
             console.log(`❌ ${participant.username} - Incorrect answer`);
         }
 
